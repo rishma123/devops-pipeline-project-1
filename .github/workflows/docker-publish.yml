@@ -19,7 +19,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build Docker image
-        run: docker build -t rishmamn/devops-pipeline-demo:latest .
+        run: docker build -t rishmamn/devops-pipeline-demo:latest ./app
+
 
       - name: Push Docker Image
         run: docker push rishmamn/devops-pipeline-demo:latest
