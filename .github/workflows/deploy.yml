@@ -13,27 +13,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # ----------------------------------------
+      # 1. Prepare SSH Key
+      # ----------------------------------------
       - name: Setup SSH key
         run: |
-          echo "${EC2_KEY}" > private_key.pem
+          echo "${{ secrets.EC2_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
+      # ----------------------------------------
+      # 2. Copy files to EC2
+      # ----------------------------------------
       - name: Copy project files to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${EC2_HOST} "mkdir -p /var/www/devops-project"
-          scp -o StrictHostKeyChecking=no -i private_key.pem -r ./* ${EC2_USER}@${EC2_HOST}:/var/www/devops-project/
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /var/www/devops-project"
+          scp -o StrictHostKeyChecking=no -i private_key.pem -r * ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/var/www/devops-project/
 
+      # ----------------------------------------
+      # 3. Deploy using docker-compose on EC2
+      # ----------------------------------------
       - name: Deploy on EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i private_key.pem ${EC2_USER}@${EC2_HOST} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i private_key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << EOF
             cd /var/www/devops-project
-
-            # Stop old containers
-            sudo docker-compose down || true
 
             # Pull latest image
             sudo docker pull rishmamn/devops-pipeline-demo:latest
 
-            # Start containers
+            # Stop old containers if running
+            sudo docker-compose down || true
+
+            # Start new containers
             sudo docker-compose up -d
           EOF
